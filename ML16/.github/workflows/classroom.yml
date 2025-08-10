@@ -1,0 +1,40 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Task 1
+      id: task-1
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Task 1
+        setup-command: pip install -r requirements.txt
+        command: python -m unittest tests/test_value_of_point.py
+        timeout: 10
+        max-score: 5
+    - name: Task 2
+      id: task-2
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Task 2
+        setup-command: pip install -r requirements.txt
+        command: python -m unittest tests/test_housing_prices.py
+        timeout: 10
+        max-score: 5
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        TASK-1_RESULTS: "${{steps.task-1.outputs.result}}"
+        TASK-2_RESULTS: "${{steps.task-2.outputs.result}}"
+      with:
+        runners: task-1,task-2
