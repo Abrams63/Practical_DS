@@ -1,0 +1,45 @@
+name: Autograding Tests
+'on':
+  - push
+  - repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+
+    - name: Run tests
+      run: |
+        pip install pytest-json-report      
+        PYTHONPATH=src pytest --disable-warnings \
+          --json-report --json-report-file /home/runner/report.json
+
+    - name: Read JSON into output
+      id: TEST1
+      shell: bash
+      run: |
+        json=$(python3 -c "import json; from base64 import b64encode; print(b64encode(json.dumps(json.load(open('/home/runner/report.json'))).encode()).decode())")
+        echo "result=$json" >> $GITHUB_OUTPUT
+
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        TEST1_RESULTS: ${{ steps.TEST1.outputs.result }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        runners: TEST1       
